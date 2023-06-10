@@ -1,0 +1,36 @@
+# Игнорирование временных файлов и директорий
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+._*
+
+# Игнорирование системных файлов
+/.idea
+/.vscode
+/.env
+/.venv
+/.pytest_cache
+/.coverage
+/.cache
+/
+data
+# Игнорирование файлов и директорий сборки, пакетов и зависимостей
+/dist
+/build
+/venv
+/node_modules
+
+# Игнорирование логов и файлов отладки
+/logs
+/debug.log
+
+# Игнорирование секретных файлов
+/secrets.ini
+/secrets.yml
+/secrets.json
+
+# Другие специфические правила исключения
