@@ -1,9 +1,12 @@
 import csv
 
 
-def read_csv_file(file_path, orderkey):
+def read_csv_file(file_path, sku2_file_path, sku_cargotypes2_file_path, orderkey):
+    """
+    Функция для чтения CSV-файла и фильтрации данных по ключу заказа.
+    """
     data = []
-    orderkey_count = {} 
+    orderkey_count = {}
 
     with open(file_path, 'r', newline='') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=',')
@@ -34,12 +37,16 @@ def read_csv_file(file_path, orderkey):
                 }
                 data.append(item)
 
-    sku2_file_path = 'E:/dev/project/proj_yandex/packing_service/data/sku2.csv'
     with open(sku2_file_path, 'r', newline='') as csvfile:
         reader = csv.DictReader(csvfile)
-        sku_data = {row['sku']: {'a': float(row['a']), 'b': float(row['b']), 'c': float(row['c'])} for row in reader}
+        sku_data = {
+            row['sku']: {
+                'a': float(row['a']),
+                'b': float(row['b']),
+                'c': float(row['c'])
+            } for row in reader
+        }
 
-    sku_cargotypes2_file_path = 'E:/dev/project/proj_yandex/packing_service/data/sku_cargotypes2.csv'
     with open(sku_cargotypes2_file_path, 'r', newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         cargotype_data = {}
@@ -57,7 +64,7 @@ def read_csv_file(file_path, orderkey):
             item['a'] = sku_data[sku].get('a')
             item['b'] = sku_data[sku].get('b')
             item['c'] = sku_data[sku].get('c')
-        
+
         if sku in cargotype_data:
             item['cargotype'] = list(map(int, cargotype_data[sku]))
 
