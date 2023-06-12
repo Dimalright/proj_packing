@@ -6,18 +6,21 @@ def read_csv_file(file_path, sku2_file_path, sku_cargotypes2_file_path, orderkey
     Функция для чтения CSV-файла и фильтрации данных по ключу заказа.
     """
     data = []
-    orderkey_count = {}
+    order_items_count = {}
 
     with open(file_path, 'r', newline='') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=',')
         for row in reader:
             if row.get('orderkey') == orderkey:
-                orderkey_count[row['orderkey']] = orderkey_count.get(row['orderkey'], 0) + 1
+                orderkey = row['orderkey']
+                sku = row['sku']
+                order_item_key = (orderkey, sku)
+                order_items_count[order_item_key] = order_items_count.get(order_item_key, 0) + 1
                 item = {
                     '': int(row['']),
-                    'count': orderkey_count[row['orderkey']],
+                    'count': order_items_count[order_item_key],
                     'whs': int(row['whs']),
-                    'orderkey': row['orderkey'],
+                    'orderkey': orderkey,
                     'selected_cartontype': row['selected_cartontype'],
                     'box_num': int(row['box_num']),
                     'recommended_cartontype': row['recommended_cartontype'],
@@ -27,7 +30,7 @@ def read_csv_file(file_path, sku2_file_path, sku_cargotypes2_file_path, orderkey
                     'pack_volume': float(row['pack_volume']),
                     'rec_calc_cube': float(row['rec_calc_cube']),
                     'goods_wght': float(row['goods_wght']) if row['goods_wght'] else None,
-                    'sku': row['sku'],
+                    'sku': sku,
                     'who': row['who'],
                     'trackingid': row['trackingid'],
                     'a': None,
@@ -36,7 +39,7 @@ def read_csv_file(file_path, sku2_file_path, sku_cargotypes2_file_path, orderkey
                     'cargotype': [],
                 }
                 data.append(item)
-
+                
     with open(sku2_file_path, 'r', newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         sku_data = {
