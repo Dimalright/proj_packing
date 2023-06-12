@@ -11,8 +11,9 @@ def read_csv_file(file_path, sku2_file_path, sku_cargotypes2_file_path, orderkey
     with open(file_path, 'r', newline='') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=',')
         for row in reader:
-            orderkey_count[row['orderkey']] = orderkey_count.get(row['orderkey'], 0) + 1
             if row.get('orderkey') == orderkey:
+                orderkey_count[row['orderkey']] = orderkey_count.get(row['orderkey'], 0) + 1
+                print(orderkey_count)
                 item = {
                     '': int(row['']),
                     'count': orderkey_count[row['orderkey']],
