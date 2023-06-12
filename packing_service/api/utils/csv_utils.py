@@ -13,7 +13,6 @@ def read_csv_file(file_path, sku2_file_path, sku_cargotypes2_file_path, orderkey
         for row in reader:
             if row.get('orderkey') == orderkey:
                 orderkey_count[row['orderkey']] = orderkey_count.get(row['orderkey'], 0) + 1
-                print(orderkey_count)
                 item = {
                     '': int(row['']),
                     'count': orderkey_count[row['orderkey']],
