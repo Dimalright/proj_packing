@@ -9,9 +9,9 @@ class OrdersView(APIView):
     Класс представления для получения информации о заказе.
     """
 
-    file_path = 'data/data2.csv'
-    sku2_file_path = 'data/sku2.csv'
-    sku_cargotypes2_file_path = 'data/sku_cargotypes2.csv'
+    file_path = 'data/data.csv'
+    sku2_file_path = 'data/sku.csv'
+    sku_cargotypes2_file_path = 'data/sku_cargotypes.csv'
 
     def get(self, request, orderkey):
         """
