@@ -6,7 +6,7 @@ git clone <https://github.com/Dimalright/proj_yandex.git>
 #
 Создайте вирутальное окружение командой py -m venv venv
 #
-Активируйте виртуальное окружение командой source  source venv/Scripts/activate
+Активируйте виртуальное окружение командой  source venv/Scripts/activate
 #
 Обновите pip install --upgrade pip
 #
