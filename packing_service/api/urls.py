@@ -19,6 +19,7 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path('v1/orders/<str:orderkey>/', OrdersView.as_view(), name='orders'),
+    # path('v1/orders/<str:orderkey>/', OrdersView.as_view(), name='orders'),
+    path('v1/orders/', OrdersView.as_view(), name='orders'),
     path('v1/swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='swagger-ui'),
 ]

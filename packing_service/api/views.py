@@ -1,7 +1,9 @@
+from random import choice
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .utils.csv_utils import read_csv_file
+from .utils.parse_order_id import get_orderkey
 
 
 class OrdersView(APIView):
@@ -13,16 +15,16 @@ class OrdersView(APIView):
     sku2_file_path = 'data/sku.csv'
     sku_cargotypes2_file_path = 'data/sku_cargotypes.csv'
 
-    def get(self, request, orderkey):
+
+    def get(self, request):
         """
         Метод GET для получения информации о заказе.
         """
-
         filtered_data = read_csv_file(
             self.file_path,
             self.sku2_file_path,
             self.sku_cargotypes2_file_path,
-            orderkey
+            choice(get_orderkey())
         )
 
         if filtered_data:
