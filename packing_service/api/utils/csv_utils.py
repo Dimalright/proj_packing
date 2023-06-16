@@ -5,18 +5,15 @@ def read_csv_file(file_path, sku_file_path, sku_cargotypes_file_path, orderkey):
     """
     Функция для чтения CSV-файла и фильтрации данных по ключу заказа.
     """
-    data = []
+    items = []
 
     with open(file_path, 'r', newline='') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=',')
         for row in reader:
             if row.get('orderkey') == orderkey:
-                orderkey = row['orderkey']
-                sku = row['sku']
                 item = {
                     '': int(row['']),
                     'whs': int(row['whs']),
-                    'orderkey': orderkey,
                     'selected_cartontype': row['selected_cartontype'],
                     'box_num': int(row['box_num']),
                     'recommended_cartontype': row['recommended_cartontype'],
@@ -26,7 +23,7 @@ def read_csv_file(file_path, sku_file_path, sku_cargotypes_file_path, orderkey):
                     'pack_volume': float(row['pack_volume']),
                     'rec_calc_cube': float(row['rec_calc_cube']),
                     'goods_wght': float(row['goods_wght']) if row['goods_wght'] else None,
-                    'sku': sku,
+                    'sku': row['sku'],
                     'barcode': None,
                     'who': row['who'],
                     'trackingid': row['trackingid'],
@@ -35,8 +32,13 @@ def read_csv_file(file_path, sku_file_path, sku_cargotypes_file_path, orderkey):
                     'c': None,
                     'cargotype': [],
                 }
-                data.append(item)
-                
+                items.append(item)
+
+    order = {
+        'orderId': orderkey,
+        'items': items
+    }
+
     with open(sku_file_path, 'r', newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         sku_data = {
@@ -66,8 +68,7 @@ def read_csv_file(file_path, sku_file_path, sku_cargotypes_file_path, orderkey):
             barcode = int(row['barcode'])
             barcode_data[sku] = barcode
 
-
-    for item in data:
+    for item in items:
         sku = item['sku']
         if sku in sku_data:
             item['a'] = sku_data[sku].get('a')
@@ -80,4 +81,5 @@ def read_csv_file(file_path, sku_file_path, sku_cargotypes_file_path, orderkey):
         if sku in barcode_data:
             item['barcode'] = barcode_data[sku]
 
-    return data
+
+    return order
