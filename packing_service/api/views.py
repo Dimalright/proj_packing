@@ -1,4 +1,5 @@
 from random import choice
+
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -12,8 +13,8 @@ class OrdersView(APIView):
     """
 
     file_path = 'data/data.csv'
-    sku2_file_path = 'data/sku.csv'
-    sku_cargotypes2_file_path = 'data/sku_cargotypes.csv'
+    sku_file_path = 'data/sku.csv'
+    sku_cargotypes_file_path = 'data/sku_cargotypes.csv'
 
 
     def get(self, request):
@@ -22,8 +23,8 @@ class OrdersView(APIView):
         """
         filtered_data = read_csv_file(
             self.file_path,
-            self.sku2_file_path,
-            self.sku_cargotypes2_file_path,
+            self.sku_file_path,
+            self.sku_cargotypes_file_path,
             choice(get_orderkey())
         )
 
