@@ -7,7 +7,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .utils.csv_utils import read_csv_file
-from .utils.csv_utils1 import read_csv_file1
 from .utils.parse_order_id import get_orderkey
 
 
