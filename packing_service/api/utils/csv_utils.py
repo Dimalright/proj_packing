@@ -12,8 +12,6 @@ def read_csv_file(file_path, sku_file_path, sku_cargotypes_file_path, orderkey):
         for row in reader:
             if row.get('orderkey') == orderkey:
                 item = {
-                    '': int(row['']),
-                    'whs': int(row['whs']),
                     'selected_cartontype': row['selected_cartontype'],
                     'box_num': int(row['box_num']),
                     'recommended_cartontype': row['recommended_cartontype'],
