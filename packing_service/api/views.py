@@ -1,9 +1,10 @@
 import csv
-from pprint import pprint
+import json
+import pprint
 from random import choice
 
 import requests
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -53,6 +54,7 @@ class OrdersView(APIView):
 
 
 
+
 class PackageView(APIView):
     def get(self, request, orderkey: str):
         order_list = list(csv.reader(open('data/data.csv')))
@@ -62,12 +64,7 @@ class PackageView(APIView):
         order = []
         sku = set()
 
-        flag = 0
-
-        for el in order_list:
-            if flag == 0:
-                flag = 1
-                continue
+        for el in order_list[1:]:
             if el[2] == orderkey:
                 order.append(el)
                 sku.add(el[12])
@@ -85,14 +82,17 @@ class PackageView(APIView):
 
         for el in sku:
             temp_dict = {}
-            for row in sku_list:
+            for row in sku_list[1:]:
                 if row[1] == el:
-                    temp_dict['sku'] = el
-                    temp_dict['size1'] = row[2]
-                    temp_dict['size2'] = row[3]
-                    temp_dict['size3'] = row[4]
-                    temp_dict['type'] = []
-            for row in cargotypes:
+                    temp_dict = {
+                        'sku': el,
+                        'size1': row[2],
+                        'size2': row[3],
+                        'size3': row[4],
+                        'type': []
+                    }
+                    break
+            for row in cargotypes[1:]:
                 if row[1] == el:
                     temp_dict.setdefault('type', []).append(row[2])
             temp_dict['count'] = count_weight_dict[el]['count']
@@ -103,12 +103,12 @@ class PackageView(APIView):
             'orderId': orderkey,
             'items': items_list
         }
-
+        print(items_list)
         result = requests.post('http://localhost:8001/pack', json=request_dict)
 
         if result.status_code == 200:
             data = result.json()
-
+            # print(data)
             orderAfterML = {
                 'orderId': orderkey,
                 'packages': []
@@ -121,8 +121,26 @@ class PackageView(APIView):
                         'recommendedPacks': recommended_packs,
                         'items': []
                     }
+                    for item in items_list:
+                        package['items'].append(item.copy())
+
                     orderAfterML['packages'].append(package)
-            return JsonResponse(orderAfterML)
-            
+
+            sku_info_dict = {}
+            for row in sku_list[1:]:
+                sku_info_dict[row[1]] = {
+                    'name': row[6],
+                    'pic': row[7]
+                }
+
+            for package in orderAfterML['packages']:
+                for item in package['items']:
+                    sku = item['sku']
+                    name = sku_info_dict[sku]['name']
+                    item['name'] = name
+                    item['pic'] = sku_info_dict[sku]['pic']
+
+            return HttpResponse(json.dumps(orderAfterML, ensure_ascii=False))
+
         else:
             return JsonResponse({'error': 'Failed to retrieve data'}, status=result.status_code)
