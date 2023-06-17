@@ -1,4 +1,5 @@
 import csv
+from pprint import pprint
 from random import choice
 
 import requests
@@ -53,13 +54,13 @@ class OrdersView(APIView):
 
 
 class PackageView(APIView):
-    def get(self, request, orderkey):
+    def get(self, request, orderkey: str):
         order_list = list(csv.reader(open('data/data.csv')))
         sku_list = list(csv.reader(open('data/sku.csv')))
         cargotypes = list(csv.reader(open('data/sku_cargotypes.csv')))
 
         order = []
-        sku = []
+        sku = set()
 
         flag = 0
 
@@ -69,9 +70,9 @@ class PackageView(APIView):
                 continue
             if el[2] == orderkey:
                 order.append(el)
-                sku.append(el[12])
+                sku.add(el[12])
 
-        count_weight_dict = dict()
+        count_weight_dict = {}
 
         for el in sku:
             count_weight_dict[el] = {'count': 0}
@@ -103,7 +104,25 @@ class PackageView(APIView):
             'items': items_list
         }
 
-        result = requests.get('http://localhost:8001/pack', json=request_dict)
+        result = requests.post('http://localhost:8001/pack', json=request_dict)
 
-        data = result.json()
-        return JsonResponse(data)
+        if result.status_code == 200:
+            data = result.json()
+
+            orderAfterML = {
+                'orderId': orderkey,
+                'packages': []
+            }
+
+            for i, package_data in enumerate(data.get('package', []), 1):
+                for package_id, recommended_packs in package_data.items():
+                    package = {
+                        'packageId': i,
+                        'recommendedPacks': recommended_packs,
+                        'items': []
+                    }
+                    orderAfterML['packages'].append(package)
+            return JsonResponse(orderAfterML)
+            
+        else:
+            return JsonResponse({'error': 'Failed to retrieve data'}, status=result.status_code)
