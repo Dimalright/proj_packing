@@ -25,6 +25,8 @@ def read_csv_file(file_path, sku_file_path, sku_cargotypes_file_path, orderkey):
                     'goods_wght': float(row['goods_wght']) if row['goods_wght'] else None,
                     'sku': row['sku'],
                     'barcode': None,
+                    'name': None,
+                    'pic': None,
                     'who': row['who'],
                     'trackingid': row['trackingid'],
                     'a': None,
@@ -45,7 +47,9 @@ def read_csv_file(file_path, sku_file_path, sku_cargotypes_file_path, orderkey):
             row['sku']: {
                 'a': float(row['a']),
                 'b': float(row['b']),
-                'c': float(row['c'])
+                'c': float(row['c']),
+                'name': row['name'],
+                'pic': row['pic']
             } for row in reader
         }
 
@@ -74,6 +78,8 @@ def read_csv_file(file_path, sku_file_path, sku_cargotypes_file_path, orderkey):
             item['a'] = sku_data[sku].get('a')
             item['b'] = sku_data[sku].get('b')
             item['c'] = sku_data[sku].get('c')
+            item['name'] = sku_data[sku].get('name')
+            item['pic'] = sku_data[sku].get('pic')
 
         if sku in cargotype_data:
             item['cargotype'] = list(map(int, cargotype_data[sku]))
