@@ -1,3 +1,4 @@
+import csv
 from random import choice
 
 import requests
@@ -5,13 +6,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .utils.build_item_list import build_items_list
-from .utils.build_order_after_ml import build_order_after_ml
 from .utils.filter_order import read_csv_file
 from .utils.order_and_cancel import cancel_order, get_order_by_id
-from .utils.order_list import get_order_list
 from .utils.parse_order_id import get_orderkey
-from .utils.sku_info import get_sku_info_dict
 
 
 class OrdersView(APIView):
@@ -67,16 +64,117 @@ class PackageView(APIView):
     """
     Класс представления обработки операций, связанных с упаковкой товаров.
     """
+
     FILE_PATH = 'data/data.csv'
     SKU_FILE_PATH = 'data/sku.csv'
     SKU_CARGOTYPES_FILE_PATH = 'data/sku_cargotypes.csv'
+
+    def get_order_list(self, orderkey):
+        """
+        Получение списка товаров для заданного ключа заказа.
+        """
+        order_list = list(csv.reader(open(self.FILE_PATH)))
+        return [el for el in order_list[1:] if el[2] == orderkey]
+
+    def get_sku_info_dict(self):
+        """
+        Получение словаря информации о товарах.
+        """
+        sku_list = list(csv.reader(open(self.SKU_FILE_PATH)))
+        cargotypes = list(csv.reader(open(self.SKU_CARGOTYPES_FILE_PATH)))
+
+        sku_info_dict = {}
+        sku_info_dict2 = {}
+
+        for row in sku_list[1:]:
+            sku_info_dict[row[1]] = {
+                'size1': row[2],
+                'size2': row[3],
+                'size3': row[4],
+                'type': []
+            }
+            sku_info_dict2[row[1]] = {
+                'name': row[6],
+                'pic': row[7],
+                'barcode': row[5]
+            }
+        for row in cargotypes[1:]:
+            if row[1] in sku_info_dict:
+                sku_info_dict[row[1]].setdefault('type', []).append(row[2])
+
+        return sku_info_dict, sku_info_dict2
+
+    def build_items_list(self, sku, count_weight_dict, sku_info_dict):
+        """
+        Построение списка товаров для упаковки.
+        """
+        items_list = []
+        sku_set = set()
+
+        for el in sku:
+            if el not in sku_set:
+                temp_dict = sku_info_dict[el].copy()
+                temp_dict['sku'] = el
+                temp_dict['count'] = count_weight_dict[el]['count']
+                temp_dict['weight'] = count_weight_dict[el]['weight']
+                items_list.append(temp_dict)
+                sku_set.add(el)
+
+        return items_list
+
+    def build_order_after_ml(self, orderkey, data, count_weight_dict, sku_info_dict, sku_info_dict2):
+        """
+        Построение данных о заказе после обработки моделью машинного обучения.
+        """
+        order_after_ml = {
+            'orderId': orderkey,
+            'packages': []
+        }
+
+        package_id = 1
+
+        sku_counts = {}
+        for package_data in data.get('package', []):
+            for sku, recommended_packs in package_data.items():
+                count = count_weight_dict[sku]['count']
+                if sku in sku_counts:
+                    if count > sku_counts[sku]['count']:
+                        sku_counts[sku] = {
+                            'count': count,
+                            'package': package_data,
+                        }
+                else:
+                    sku_counts[sku] = {
+                        'count': count,
+                        'package': package_data,
+                    }
+
+        for sku, package_data in sku_counts.items():
+            package = {
+                'packageId': package_id,
+                'recommendedPacks': package_data['package'][sku],
+                'items': []
+            }
+
+            item = sku_info_dict[sku].copy()
+            item.update(sku_info_dict2[sku])
+            item['sku'] = sku
+            item['count'] = package_data['count']
+            item['weight'] = count_weight_dict[sku]['weight']
+            package['items'].append(item)
+
+            order_after_ml['packages'].append(package)
+
+            package_id += 1
+
+        return order_after_ml
 
     def get(self, request, orderkey: str):
         """
         Обработка GET-запроса для получения информации об упаковке для заданного ключа заказа.
         """
-        order_list = get_order_list(self, orderkey)
-        sku_info_dict, sku_info_dict2 = get_sku_info_dict(self)
+        order_list = self.get_order_list(orderkey)
+        sku_info_dict, sku_info_dict2 = self.get_sku_info_dict()
 
         order = []
         sku = set()
@@ -94,7 +192,7 @@ class PackageView(APIView):
             count_weight_dict[el[12]]['count'] += 1
             count_weight_dict[el[12]]['weight'] = el[11]
 
-        items_list = build_items_list(self, sku, count_weight_dict, sku_info_dict)
+        items_list = self.build_items_list(sku, count_weight_dict, sku_info_dict)
 
         request_dict = {
             'orderId': orderkey,
@@ -104,7 +202,7 @@ class PackageView(APIView):
         result = requests.post('http://localhost:8001/pack', json=request_dict)
         if result.status_code == 200:
             data = result.json()
-            order_after_ml = build_order_after_ml(self, orderkey, data, count_weight_dict, sku_info_dict, sku_info_dict2)
+            order_after_ml = self.build_order_after_ml(orderkey, data, count_weight_dict, sku_info_dict, sku_info_dict2)
 
             return Response(order_after_ml)
 
