@@ -1,13 +1,17 @@
-import csv
 from random import choice
 
 import requests
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .utils.build_item_list import build_items_list
+from .utils.build_order_after_ml import build_order_after_ml
 from .utils.filter_order import read_csv_file
+from .utils.order_and_cancel import cancel_order, get_order_by_id
+from .utils.order_list import get_order_list
 from .utils.parse_order_id import get_orderkey
-from .utils.process_package import process_package_data
+from .utils.sku_info import get_sku_info_dict
 
 
 class OrdersView(APIView):
@@ -15,19 +19,21 @@ class OrdersView(APIView):
     Класс представления для получения информации о заказе.
     """
 
-    file_path = 'data/data.csv'
-    sku_file_path = 'data/sku.csv'
-    sku_cargotypes_file_path = 'data/sku_cargotypes.csv'
+    FILE_PATH = 'data/data.csv'
+    SKU_FILE_PATH = 'data/sku.csv'
+    SKU_CARGOTYPES_FILE_PATH = 'data/sku_cargotypes.csv'
+
+    barcodes = []
 
     def get(self, request):
         """
         Метод GET для получения информации о заказе.
         """
-        barcodes = request.GET.getlist('barcode')
+        self.barcodes = request.GET.getlist('barcode')
         filtered_data = read_csv_file(
-            self.file_path,
-            self.sku_file_path,
-            self.sku_cargotypes_file_path,
+            self.FILE_PATH,
+            self.SKU_FILE_PATH,
+            self.SKU_CARGOTYPES_FILE_PATH,
             choice(get_orderkey())
         )
 
@@ -44,83 +50,63 @@ class OrdersView(APIView):
         barcodes = request.data.get('barcodes')
 
         return Response({'message': 'POST-запрос успешно обработан.'})
+    
+    def patch(self, request):
+        order_id = request.data.get('orderkey')
+
+        order = get_order_by_id(order_id)
+        if not order:
+            return Response({'error': 'Заказ не найден'}, status=status.HTTP_404_NOT_FOUND)
+
+        cancel_order(order_id)
+
+        return Response({'message': 'Заказ успешно отменен'})
 
 
 class PackageView(APIView):
     """
-    API endpoint для обработки заказа и создания упаковок.
+    Класс представления обработки операций, связанных с упаковкой товаров.
     """
+    FILE_PATH = 'data/data.csv'
+    SKU_FILE_PATH = 'data/sku.csv'
+    SKU_CARGOTYPES_FILE_PATH = 'data/sku_cargotypes.csv'
 
     def get(self, request, orderkey: str):
-        order_list = []
-        sku_list = []
-        cargotypes = []
-
-        with open('data/data.csv') as order_file:
-            order_list = list(csv.reader(order_file))
-
-        with open('data/sku.csv') as sku_file:
-            sku_list = list(csv.reader(sku_file))
-
-        with open('data/sku_cargotypes.csv') as cargotypes_file:
-            cargotypes = list(csv.reader(cargotypes_file))
+        """
+        Обработка GET-запроса для получения информации об упаковке для заданного ключа заказа.
+        """
+        order_list = get_order_list(self, orderkey)
+        sku_info_dict, sku_info_dict2 = get_sku_info_dict(self)
 
         order = []
         sku = set()
 
-        for el in order_list[1:]:
-            if el[2] == orderkey:
-                order.append(el)
-                sku.add(el[12])
+        for el in order_list:
+            order.append(el)
+            sku.add(el[12])
 
         count_weight_dict = {}
 
+        for el in sku:
+            count_weight_dict[el] = {'count': 0}
+
         for el in order:
-            sku_code = el[12]
-            if sku_code not in count_weight_dict:
-                count_weight_dict[sku_code] = {'count': 0}
-            count_weight_dict[sku_code]['count'] += 1
-            count_weight_dict[sku_code]['weight'] = el[11]
+            count_weight_dict[el[12]]['count'] += 1
+            count_weight_dict[el[12]]['weight'] = el[11]
 
-        sku_info_dict = {}
-
-        for row in sku_list[1:]:
-            sku_info_dict[row[1]] = {
-                'size1': row[2],
-                'size2': row[3],
-                'size3': row[4],
-                'type': [],
-                'name': row[6],
-                'pic': row[7],
-                'barcode': row[5]
-            }
-
-        for row in cargotypes[1:]:
-            if row[1] in sku_info_dict:
-                sku_info_dict[row[1]].setdefault('type', []).append(row[2])
-
-        items_list = []
-
-        for sku_code in sku:
-            if sku_code not in items_list:
-                temp_dict = sku_info_dict[sku_code].copy()
-                temp_dict['sku'] = sku_code
-                temp_dict['count'] = count_weight_dict[sku_code]['count']
-                temp_dict['weight'] = count_weight_dict[sku_code]['weight']
-                items_list.append(temp_dict)
+        items_list = build_items_list(self, sku, count_weight_dict, sku_info_dict)
 
         request_dict = {
             'orderId': orderkey,
-            'items': items_list
+            'items': items_list,
         }
 
         result = requests.post('http://localhost:8001/pack', json=request_dict)
-
         if result.status_code == 200:
             data = result.json()
-
-            order_after_ml = process_package_data(data, count_weight_dict, sku_info_dict)
+            order_after_ml = build_order_after_ml(self, orderkey, data, count_weight_dict, sku_info_dict, sku_info_dict2)
 
             return Response(order_after_ml)
+
         else:
             return Response({'error': 'Failed to retrieve data'}, status=result.status_code)
