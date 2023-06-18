@@ -108,23 +108,24 @@ class PackageView(APIView):
 
         if result.status_code == 200:
             data = result.json()
-            # print(data)
             orderAfterML = {
                 'orderId': orderkey,
                 'packages': []
             }
 
-            for i, package_data in enumerate(data.get('package', []), 1):
-                for package_id, recommended_packs in package_data.items():
-                    package = {
-                        'packageId': i,
-                        'recommendedPacks': recommended_packs,
-                        'items': []
-                    }
-                    for item in items_list:
-                        package['items'].append(item.copy())
+        for i, package_data in enumerate(data.get('package', []), 1):
+            package = {
+                'packageId': i,
+                'recommendedPacks': None,
+                'items': []
+            }
+            for package_id, recommended_packs in package_data.items():
+                package['recommendedPacks'] = recommended_packs
 
-                    orderAfterML['packages'].append(package)
+            for item in items_list:
+                package['items'].append(item.copy())
+
+            orderAfterML['packages'].append(package)
 
             sku_info_dict = {}
             for row in sku_list[1:]:
