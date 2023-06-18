@@ -78,32 +78,39 @@ class PackageView(APIView):
             count_weight_dict[el[12]]['count'] += 1
             count_weight_dict[el[12]]['weight'] = el[11]
 
+        sku_info_dict = {}
+        for row in sku_list[1:]:
+            sku_info_dict[row[1]] = {
+                'size1': row[2],
+                'size2': row[3],
+                'size3': row[4],
+                'type': [],
+                'name': row[6],
+                'pic': row[7],
+                'barcode': row[5]
+            }
+
+        for row in cargotypes[1:]:
+            if row[1] in sku_info_dict:
+                sku_info_dict[row[1]].setdefault('type', []).append(row[2])
+
         items_list = []
+        sku_set = set()  # Множество для хранения уникальных значений sku
 
         for el in sku:
-            temp_dict = {}
-            for row in sku_list[1:]:
-                if row[1] == el:
-                    temp_dict = {
-                        'sku': el,
-                        'size1': row[2],
-                        'size2': row[3],
-                        'size3': row[4],
-                        'type': []
-                    }
-                    break
-            for row in cargotypes[1:]:
-                if row[1] == el:
-                    temp_dict.setdefault('type', []).append(row[2])
-            temp_dict['count'] = count_weight_dict[el]['count']
-            temp_dict['weight'] = count_weight_dict[el]['weight']
-            items_list.append(temp_dict)
+            if el not in sku_set:  # Проверяем, что sku еще не добавлен в список
+                temp_dict = sku_info_dict[el].copy()
+                temp_dict['sku'] = el
+                temp_dict['count'] = count_weight_dict[el]['count']
+                temp_dict['weight'] = count_weight_dict[el]['weight']
+                items_list.append(temp_dict)
+                sku_set.add(el)  # Добавляем sku во множество
 
         request_dict = {
             'orderId': orderkey,
             'items': items_list
         }
-        print(items_list)
+
         result = requests.post('http://localhost:8001/pack', json=request_dict)
 
         if result.status_code == 200:
@@ -113,35 +120,42 @@ class PackageView(APIView):
                 'packages': []
             }
 
-        for i, package_data in enumerate(data.get('package', []), 1):
-            package = {
-                'packageId': i,
-                'recommendedPacks': None,
-                'items': []
-            }
-            for package_id, recommended_packs in package_data.items():
-                package['recommendedPacks'] = recommended_packs
+            package_id = 1
 
-            for item in items_list:
-                package['items'].append(item.copy())
+            sku_counts = {}
+            for package_data in data.get('package', []):
+                for sku, recommended_packs in package_data.items():
+                    count = count_weight_dict[sku]['count']
+                    if sku in sku_counts:
+                        if count > sku_counts[sku]['count']:
+                            sku_counts[sku] = {
+                                'count': count,
+                                'package': package_data,
+                            }
+                    else:
+                        sku_counts[sku] = {
+                            'count': count,
+                            'package': package_data,
+                        }
 
-            orderAfterML['packages'].append(package)
-
-            sku_info_dict = {}
-            for row in sku_list[1:]:
-                sku_info_dict[row[1]] = {
-                    'name': row[6],
-                    'pic': row[7]
+            for sku, package_data in sku_counts.items():
+                package = {
+                    'packageId': package_id,
+                    'recommendedPacks': package_data['package'][sku],
+                    'items': []
                 }
 
-            for package in orderAfterML['packages']:
-                for item in package['items']:
-                    sku = item['sku']
-                    name = sku_info_dict[sku]['name']
-                    item['name'] = name
-                    item['pic'] = sku_info_dict[sku]['pic']
+                item = sku_info_dict[sku].copy()
+                item['sku'] = sku
+                item['count'] = package_data['count']
+                item['weight'] = count_weight_dict[sku]['weight']
+                package['items'].append(item)
 
-            return HttpResponse(json.dumps(orderAfterML, ensure_ascii=False))
+                orderAfterML['packages'].append(package)
+
+                package_id += 1
+
+            return Response(orderAfterML)
 
         else:
-            return JsonResponse({'error': 'Failed to retrieve data'}, status=result.status_code)
+            return Response({'error': 'Failed to retrieve data'}, status=result.status_code)
