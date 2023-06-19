@@ -1,4 +1,5 @@
 # Проект хакатона от Yandex Market. Команда № 4
+Бэкенд написан на Python при помощи библиотеке Django
 
 Состав команды:
 - Project Manager: @alexa_ch99
@@ -7,7 +8,6 @@
 - Backend developer: @dimalright
 - DS: @Sta9islaus @vododokhov21 @yaroslav_kn
 
-- Бэкенд написан на Python при помощи библиотеке Django
 
 
 Установка Убедитесь, что у вас установлен Docker и Docker Compose.
