@@ -7,6 +7,8 @@
 - Backend developer: @dimalright
 - DS: @Sta9islaus @vododokhov21 @yaroslav_kn
 
+- Бэкенд написан на Python при помощи библиотеке Django
+
 
 Установка Убедитесь, что у вас установлен Docker и Docker Compose.
 #
