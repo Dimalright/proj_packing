@@ -12,9 +12,13 @@
 #
 Склонируйте репозиторий проекта:
 #
-git clone https://github.com/Dimalright/proj_yandex.git Перейдите в корневую папку проекта: 
+git clone https://github.com/Dimalright/proj_yandex.git
 #
-cd proj_yandex Соберите и запустите контейнеры с помощью Docker Compose: 
+Перейдите в корневую папку проекта: 
+#
+cd proj_yandex
+#
+Соберите и запустите контейнеры с помощью Docker Compose: 
 #
 docker-compose up
 #
