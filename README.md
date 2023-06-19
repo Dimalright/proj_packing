@@ -1,4 +1,4 @@
-# Проект хакатона от Yandex Market. Команда № 1
+# Проект хакатона от Yandex Market. Команда № 4
 
 Состав команды:
 - Project Manager: @alexa_ch99
