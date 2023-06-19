@@ -199,7 +199,7 @@ class PackageView(APIView):
             'items': items_list,
         }
 
-        result = requests.post('http://localhost:8001/pack', json=request_dict)
+        result = requests.post('http://ds_server:8001/pack', json=request_dict)
         if result.status_code == 200:
             data = result.json()
             order_after_ml = self.build_order_after_ml(orderkey, data, count_weight_dict, sku_info_dict, sku_info_dict2)
