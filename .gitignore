@@ -23,6 +23,7 @@ __pycache__/
 /build
 /venv
 /node_modules
+/parcel-packer
 
 # Игнорирование логов и файлов отладки
 /logs
