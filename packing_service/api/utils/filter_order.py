@@ -7,6 +7,7 @@ def read_csv_file(file_path, sku_file_path, sku_cargotypes_file_path, orderkey):
     """
     items = []
     sku_set = set()
+    sku_count = {}
 
     with open(file_path, 'r', newline='') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=',')
@@ -25,6 +26,7 @@ def read_csv_file(file_path, sku_file_path, sku_cargotypes_file_path, orderkey):
                         'rec_calc_cube': float(row['rec_calc_cube']),
                         'goods_wght': float(row['goods_wght']) if row['goods_wght'] else None,
                         'sku': sku,
+                        'count': 1,
                         'barcode': None,
                         'name': None,
                         'pic': None,
@@ -37,6 +39,13 @@ def read_csv_file(file_path, sku_file_path, sku_cargotypes_file_path, orderkey):
                     }
                     items.append(item)
                     sku_set.add(sku)
+                    sku_count[sku] = 1
+
+                else:
+                    sku_count[sku] += 1
+                    for item in items:
+                        if item['sku'] == sku:
+                            item['count'] = sku_count[sku]
 
     order = {
         'orderId': orderkey,
