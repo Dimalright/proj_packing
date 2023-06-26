@@ -30,6 +30,8 @@ packing_service будет доступен по адресу http://localhost:8
 #
 ds_server будет доступен по адресу http://localhost:8001.
 #
+frontend (parcel-packer) будет доступен по адресу http://localhost:3001/
+#
 Примеры запросов к API:
 #
 http://127.0.0.1:8000/api/v1/orders/
