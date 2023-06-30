@@ -1,0 +1,15 @@
+{
+  "short_name": "Parcel Packer",
+  "name": "Упаковщик. Команда №4 – Альпаки",
+  "icons": [
+    {
+      "src": "box.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512 192x192 64x64 32x32 24x24 16x16"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff"
+}
